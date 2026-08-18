@@ -1,0 +1,33 @@
+﻿@model LaundryManager.Models.Machine
+
+@{
+    ViewData["Title"] = "Add New Machine";
+}
+
+<h2>Add New Machine</h2>
+
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Type" class="form-label"></label>
+        <select asp-for="Type" class="form-select">
+            <option value="">-- Select Type --</option>
+            <option value="Washer">Washer</option>
+            <option value="Dryer">Dryer</option>
+        </select>
+        <span asp-validation-for="Type" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="IsWorking" class="form-check-input" />
+        <label asp-for="IsWorking" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Machine</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

@@ -1,0 +1,102 @@
+﻿@model IEnumerable<LaundryManager.Models.Machine>
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Machines - WSU Laundry Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+        <div class="container">
+            <span class="navbar-brand fw-bold text-warning">
+                <i class="bi bi-shield-lock-fill me-2"></i>WSU Laundry Admin Portal
+            </span>
+            <div class="d-flex align-items-center">
+                <a href="/Home/AdminDashboard" class="btn btn-sm btn-outline-light fw-bold me-2">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                </a>
+                <a href="/Account/Logout" class="btn btn-sm btn-outline-light fw-bold">Sign Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold text-dark">All Machines</h2>
+                <p class="text-muted">View and manage every washer and dryer registered in the system.</p>
+            </div>
+            <div class="col-auto d-flex align-items-center">
+                <a href="/Machines/Create" class="btn btn-primary fw-bold">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Machine
+                </a>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-body p-0">
+                @if (!Model.Any())
+                {
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                        No machines added yet.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-uppercase fs-7 font-monospace">
+                                <tr>
+                                    <th class="ps-4">Name</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Booking</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var machine in Model)
+                                {
+                                    <tr>
+                                        <td class="ps-4 fw-bold">@machine.Name</td>
+                                        <td>@machine.Type</td>
+                                        <td>
+                                            @if (machine.IsWorking)
+                                            {
+                                                <span class="badge bg-success">Working</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Out of Order</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (machine.IsBooked)
+                                            {
+                                                <span class="text-muted small">Booked by @machine.BookedBy</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">Free</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

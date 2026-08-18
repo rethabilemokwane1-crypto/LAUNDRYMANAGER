@@ -1,0 +1,253 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html { 
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+
+/* --- THEME COLORS (Inspired by image_fe7447.jpg) --- */
+:root {
+    /* Your Main Page Background Color from the vector art */
+    --iws-page-bg: #89C7E6;
+    /* Water Color for loading */
+    --iws-water-color: #2F90B1;
+    /* Card Background/Bubble Color */
+    --iws-bubble-white: #E6F3F7;
+}
+
+/* --- OVERRIDE BOOTSTRAP DEFAULT (Optionally, add this to _Layout.cshtml) --- */
+/* (To apply the specific vector art blue to the entire page background) */
+body {
+    background-color: var(--iws-page-bg) !important;
+}
+
+/* Override the standard white cards/buttons with a light, clear bubble effect */
+.card, .btn-light, .bg-white {
+    background-color: var(--iws-bubble-white) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(47, 144, 177, 0.2) !important;
+}
+
+/* Define the new IWS accent for active status buttons */
+.btn-primary {
+    background-color: var(--iws-water-color) !important;
+    border: none;
+}
+
+
+/* =========================================
+   LOADING SCREEN: BUBBLE FILL ANIMATION
+   ========================================= */
+
+/* The full-screen overlay container */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--iws-bubble-white); /* Light/transparent feel */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Stays on top */
+}
+
+/* The circular container mimicking a washing machine drum */
+.machine-drum {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden; /* Important for the fill effect */
+    border: 8px solid var(--iws-water-color);
+    box-shadow: 0 0 20px rgba(47, 144, 177, 0.4);
+}
+
+/* The background water element (the part that fills up) */
+.drum-water {
+    position: absolute;
+    bottom: -100%; /* Initially below the visible area */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--iws-water-color);
+    animation: water-fill 2s forwards, drum-spin 4s linear infinite;
+}
+
+/* The overlay element creating the bubble texture (using a CSS pattern) */
+.bubble-texture {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, white 20%, transparent 20%), radial-gradient(circle, white 20%, transparent 20%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    opacity: 0.15; /* Subtly embedded */
+}
+
+/* --- ANIMATION KEYFRAMES --- */
+
+/* KEYFRAME: The water filling action */
+@keyframes water-fill {
+    0% {
+        bottom: -100%;
+    }
+    /* Starting empty */
+    80% {
+        bottom: -10%;
+    }
+    /* Filling near the top */
+    100% {
+        bottom: 0%;
+    }
+    /* Settle */
+}
+
+/* KEYFRAME: A subtle spin to simulate a wash cycle */
+@keyframes drum-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+/* =========================================
+   MODERN GLASSMORPHISM DESIGN (Option 2)
+   ========================================= */
+
+/* Use a modern gradient for the page background to enhance the glass effect */
+body.glass-dashboard {
+    background: radial-gradient(circle at 10% 20%, rgb(18, 126, 175) 0%, rgb(6, 102, 166) 90%);
+    min-height: 100vh;
+}
+
+/* THE GLASS CARD: This creates the frosted effect */
+.glass-card {
+    /* Use a light, semi-transparent background */
+    background: rgba(255, 255, 255, 0.75);
+    /* The magic frosted glass effect (requires browser prefixes for compatibility) */
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    /* Modern rounded corners and subtle shadow */
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    /* Update default spacing */
+    margin-bottom: 20px;
+    padding: 1.25rem;
+    overflow: hidden;
+}
+
+/* Layout within the card: Icon on left, text on right */
+.glass-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Refined circular icon box with modern gradients */
+.glass-card-icon-box {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Use dynamic blue/purple gradients from the design */
+    background: linear-gradient(135deg, #2F90B1 0%, #7E57C2 100%);
+    color: white;
+    font-size: 1.75rem;
+    box-shadow: 0 4px 10px rgba(47, 144, 177, 0.3);
+}
+
+/* Refined Typography inside the card */
+.glass-card .machine-title {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #0d2c4c;
+    margin-bottom: 2px;
+}
+
+.glass-card .machine-type {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Status LEDs: Integrated and compact */
+.status-led {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.status-available .status-led {
+    background-color: #28a745;
+}
+/* Green */
+.status-inuse .status-led {
+    background-color: #fca311;
+}
+/* Orange */
+.status-broken .status-led {
+    background-color: #e63946;
+}
+/* Red */
+
+/* MODERN, COMPACT BUTTONS */
+.glass-card .btn {
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+/* Primary Action: Deep blue with slight elevation */
+.btn-glass-primary {
+    background-color: #0666A6;
+    color: white;
+    border: none;
+}
+
+    .btn-glass-primary:hover {
+        background-color: #0a4f7e;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(6, 102, 166, 0.3);
+    }
+
+/* Compact Fault Icon Button */
+.btn-fault-icon {
+    background-color: transparent;
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+
+    .btn-fault-icon:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+        border-color: rgba(220, 53, 69, 0.5);
+    }

@@ -1,0 +1,304 @@
+﻿@model IEnumerable<LaundryManager.Models.Machine>
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Dashboard - iWS Laundry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: #f4f6f8;
+        }
+
+        .machine-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            border: 1px solid #eef0f2;
+            height: 100%;
+        }
+
+        .machine-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #e6f7f1;
+            color: #12996b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .status-available {
+            background: #e6f7ee;
+            color: #128a54;
+        }
+
+        .status-inuse {
+            background: #fff4e0;
+            color: #b57500;
+        }
+
+        .status-broken {
+            background: #fdeaea;
+            color: #c62828;
+        }
+
+        .stat-card {
+            border-radius: 14px;
+            border: 1px solid #eef0f2;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Header -->
+    <nav class="navbar navbar-dark shadow-sm mb-4" style="background:#12996b;">
+        <div class="container">
+            <span class="navbar-brand fw-bold">
+                <i class="bi bi-water me-2"></i>iWS Laundry Portal
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3 small">
+                    <i class="bi bi-person-circle me-1"></i> @ViewBag.StudentEmail
+                </span>
+                <a href="/Account/Logout" class="btn btn-sm btn-outline-light fw-bold">Sign Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="fw-bold text-dark mb-1">Res Laundry Status</h2>
+                <p class="text-muted">Book an available appliance instantly or clear your active cycles.</p>
+            </div>
+        </div>
+
+        <div id="howItWorksBanner" class="alert alert-info alert-dismissible fade show d-none" role="alert">
+            <h5 class="fw-bold"><i class="bi bi-lightbulb-fill me-2"></i>How this works</h5>
+            <ul class="mb-0 ps-3">
+                <li><strong>Book Machine Now</strong> — instantly claims a machine for immediate use.</li>
+                <li><strong>Book a Time Slot</strong> — reserves a machine for a specific time later today.</li>
+                <li>Once your cycle finishes, you'll see an alert and the machine releases automatically.</li>
+                <li>If a machine breaks, tap the wrench icon to report it.</li>
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="localStorage.setItem('hideHowItWorks', 'true')"></button>
+        </div>>
+
+        <!-- Stats Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-4">
+                <div class="stat-card bg-white p-3 text-center">
+                    <small class="text-muted text-uppercase fw-semibold d-block mb-1">Available</small>
+                    <h3 class="fw-bold text-success mb-0">@Model.Count(m => m.IsWorking && !m.IsBooked)</h3>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stat-card bg-white p-3 text-center">
+                    <small class="text-muted text-uppercase fw-semibold d-block mb-1">In Use</small>
+                    <h3 class="fw-bold text-warning mb-0">@Model.Count(m => m.IsWorking && m.IsBooked)</h3>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stat-card bg-white p-3 text-center">
+                    <small class="text-muted text-uppercase fw-semibold d-block mb-1">Broken</small>
+                    <h3 class="fw-bold text-danger mb-0">@Model.Count(m => !m.IsWorking)</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Machine Card Grid -->
+        <div class="row g-3">
+            @foreach (var machine in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="machine-card d-flex flex-column">
+
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="machine-icon-box">
+                                <i class="bi @(machine.Type == "Dryer" ? "bi-wind" : "bi-droplet-half")"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">@machine.Name</h5>
+                                <span class="text-muted small">@machine.Type</span>
+                            </div>
+                        </div>
+
+                        @if (!machine.IsWorking)
+                        {
+                            <span class="status-pill status-broken mb-3">
+                                <i class="bi bi-x-circle-fill"></i> Out of Order
+                            </span>
+                            <a href="/Home/ReportFault?machineId=@machine.Id" class="btn btn-sm btn-outline-danger w-100 fw-bold mt-auto">
+                                Report Details
+                            </a>
+                        }
+                        else if (machine.IsBooked)
+                        {
+                            @if (machine.BookedBy == ViewBag.StudentEmail)
+                            {
+                                var finishTime = machine.GetEstimatedFinishTime();
+                                var isReady = finishTime.HasValue && DateTime.Now >= finishTime.Value;
+
+                                <span class="status-pill @(isReady ? "status-available" : "status-inuse") mb-2">
+                                    <i class="bi @(isReady ? "bi-bell-fill" : "bi-play-circle-fill")"></i>
+                                    @(isReady ? "Cycle Complete!" : "In Use (By You)")
+                                </span>
+
+                                @if (finishTime.HasValue)
+                                {
+                                    <p class="text-muted small mb-3 countdown-timer"
+                                       data-finish="@finishTime.Value.ToString("yyyy-MM-ddTHH:mm:ss")"
+                                       data-machine-id="@machine.Id">
+                                        Calculating...
+                                    </p>
+                                }
+
+                                <form action="/Home/ReleaseMachine" method="post" class="mt-auto">
+                                    <input type="hidden" name="machineId" value="@machine.Id" />
+                                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold text-dark">
+                                        Finish & Release Cycle
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="status-pill status-inuse mb-3">
+                                    <i class="bi bi-lock-fill"></i> In Use
+                                </span>
+                                <button class="btn btn-sm btn-light w-100 fw-bold text-muted border mt-auto" disabled>
+                                    Locked by Another Student
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <span class="status-pill status-available mb-3">
+                                <i class="bi bi-check-circle-fill"></i> Available
+                            </span>
+
+                            
+                                var upcoming = ViewBag.UpcomingBookings as Dictionary<int, List<LaundryManager.Models.Booking>>;
+                                var machineBookings = upcoming != null && upcoming.ContainsKey(machine.Id) ? upcoming[machine.Id] : null;
+                            
+                            @if (machineBookings != null && machineBookings.Any())
+                            {
+                                <div class="mb-2">
+                                    @foreach (var b in machineBookings)
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary-emphasis d-block mb-1">
+                                            <i class="bi bi-calendar-event me-1"></i>Reserved @b.SlotStart.ToString("HH:mm")–@b.SlotEnd.ToString("HH:mm")
+                                        </span>
+                                    }
+                                </div>
+                            }
+
+                            <div class="mt-auto d-flex flex-column gap-2">
+                                <p class="text-muted small mb-1">
+                                    <i class="bi bi-info-circle me-1"></i>Use it right now, or reserve a time slot for later today.
+                                </p>
+                                <div class="d-flex gap-2">
+                                    <form action="/Home/BookMachine" method="post" class="flex-grow-1">
+                                        <input type="hidden" name="machineId" value="@machine.Id" />
+                                        <button type="submit" class="btn btn-sm btn-success w-100 fw-bold">
+                                            Book Machine Now
+                                        </button>
+                                    </form>
+                                    <a href="/Home/ReportFault?machineId=@machine.Id" class="btn btn-sm btn-outline-warning" title="Report Fault">
+                                        <i class="bi bi-wrench-adjustable"></i>
+                                    </a>
+                                </div>
+                                <a href="/Bookings/Slots?machineId=@machine.Id" class="btn btn-sm btn-outline-success w-100 fw-bold">
+                                    <i class="bi bi-calendar-check me-1"></i> Book a Time Slot Instead
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <script>
+        // Show the "How this works" banner only if the student hasn't dismissed it before
+        if (localStorage.getItem('hideHowItWorks') !== 'true') {
+            document.getElementById('howItWorksBanner').classList.remove('d-none');
+        }
+    </script>
+
+    <script>
+            const releasedMachines = new Set(); // stops us from calling release twice for the same machine
+
+    <script>
+        const releasedMachines = new Set(); // stops us from calling release twice for the same machine
+
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-timer').forEach(function (el) {
+                const finishTime = new Date(el.dataset.finish);
+                const machineId = el.dataset.machineId;
+                const now = new Date();
+                const diffMs = finishTime - now;
+
+                if (diffMs <= 0) {
+                    el.innerHTML = '<span class="text-success fw-bold">Ready to collect!</span>';
+
+                    if (!releasedMachines.has(machineId)) {
+                        releasedMachines.add(machineId);
+                        autoReleaseMachine(machineId);
+                    }
+                    return;
+                }
+
+                const minutes = Math.floor(diffMs / 60000);
+                const seconds = Math.floor((diffMs % 60000) / 1000);
+                el.textContent = `Time remaining: ${minutes}m ${seconds}s`;
+            });
+        }
+
+        function autoReleaseMachine(machineId) {
+            const formData = new FormData();
+            formData.append('machineId', machineId);
+
+            fetch('/Home/AutoReleaseMachine', {
+                method: 'POST',
+                body: formData
+            }).then(function () {
+                showCycleAlert();
+                setTimeout(function () {
+                    window.location.reload();
+                }, 3000);
+            });
+        }
+
+        function showCycleAlert() {
+            const banner = document.createElement('div');
+            banner.className = 'alert alert-success shadow position-fixed top-0 start-50 translate-middle-x mt-3 fw-bold';
+            banner.style.zIndex = 1050;
+            banner.innerHTML = '<i class="bi bi-bell-fill me-2"></i>Your laundry cycle is done! The machine has been released.';
+            document.body.appendChild(banner);
+        }
+
+        updateCountdowns();
+        setInterval(updateCountdowns, 1000);
+    </script>
+</body>
+</html>
