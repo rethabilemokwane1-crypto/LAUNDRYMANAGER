@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<LaundryManager.Models.Machine>
+@using LaundryManager.Models
 
 @{
     Layout = null;
@@ -11,9 +12,10 @@
     <title>Student Dashboard - iWS Laundry</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
         body {
-            background: #f4f6f8;
+            background-color: var(--iws-page-bg);
         }
 
         .machine-card {
@@ -29,8 +31,8 @@
             width: 48px;
             height: 48px;
             border-radius: 12px;
-            background: #e6f7f1;
-            color: #12996b;
+            background: var(--iws-bubble-white);
+            color: var(--iws-water-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -72,7 +74,7 @@
 <body>
 
     <!-- Top Navigation Header -->
-    <nav class="navbar navbar-dark shadow-sm mb-4" style="background:#12996b;">
+    <nav class="navbar navbar-dark shadow-sm mb-4" style="background-color: var(--iws-water-color);">
         <div class="container">
             <span class="navbar-brand fw-bold">
                 <i class="bi bi-water me-2"></i>iWS Laundry Portal
@@ -81,6 +83,9 @@
                 <span class="text-white me-3 small">
                     <i class="bi bi-person-circle me-1"></i> @ViewBag.StudentEmail
                 </span>
+                <button id="enableNotificationsBtn" class="btn btn-sm btn-outline-light fw-bold me-2">
+                    🔔 Enable
+                </button>
                 <a href="/Account/Logout" class="btn btn-sm btn-outline-light fw-bold">Sign Out</a>
             </div>
         </div>
@@ -103,26 +108,26 @@
                 <li>If a machine breaks, tap the wrench icon to report it.</li>
             </ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="localStorage.setItem('hideHowItWorks', 'true')"></button>
-        </div>>
+        </div>
 
         <!-- Stats Row -->
         <div class="row g-3 mb-4">
             <div class="col-4">
                 <div class="stat-card bg-white p-3 text-center">
                     <small class="text-muted text-uppercase fw-semibold d-block mb-1">Available</small>
-                    <h3 class="fw-bold text-success mb-0">@Model.Count(m => m.IsWorking && !m.IsBooked)</h3>
+                    <h3 class="fw-bold text-success mb-0">@Model.Count(m => m.Status == MachineStatus.Working && !m.IsBooked)</h3>
                 </div>
             </div>
             <div class="col-4">
                 <div class="stat-card bg-white p-3 text-center">
                     <small class="text-muted text-uppercase fw-semibold d-block mb-1">In Use</small>
-                    <h3 class="fw-bold text-warning mb-0">@Model.Count(m => m.IsWorking && m.IsBooked)</h3>
+                    <h3 class="fw-bold text-warning mb-0">@Model.Count(m => m.Status == MachineStatus.Working && m.IsBooked)</h3>
                 </div>
             </div>
             <div class="col-4">
                 <div class="stat-card bg-white p-3 text-center">
                     <small class="text-muted text-uppercase fw-semibold d-block mb-1">Broken</small>
-                    <h3 class="fw-bold text-danger mb-0">@Model.Count(m => !m.IsWorking)</h3>
+                    <h3 class="fw-bold text-danger mb-0">@Model.Count(m => m.Status != MachineStatus.Working)</h3>
                 </div>
             </div>
         </div>
@@ -144,10 +149,11 @@
                             </div>
                         </div>
 
-                        @if (!machine.IsWorking)
+                        @if (machine.Status != MachineStatus.Working)
                         {
                             <span class="status-pill status-broken mb-3">
-                                <i class="bi bi-x-circle-fill"></i> Out of Order
+                                <i class="bi bi-x-circle-fill"></i>
+                                @(machine.Status == MachineStatus.UnderRepair ? "Under Repair" : "Out of Order")
                             </span>
                             <a href="/Home/ReportFault?machineId=@machine.Id" class="btn btn-sm btn-outline-danger w-100 fw-bold mt-auto">
                                 Report Details
@@ -197,10 +203,10 @@
                                 <i class="bi bi-check-circle-fill"></i> Available
                             </span>
 
-                            
-                                var upcoming = ViewBag.UpcomingBookings as Dictionary<int, List<LaundryManager.Models.Booking>>;
-                                var machineBookings = upcoming != null && upcoming.ContainsKey(machine.Id) ? upcoming[machine.Id] : null;
-                            
+
+                            var upcoming = ViewBag.UpcomingBookings as Dictionary<int, List<LaundryManager.Models.Booking>>;
+                            var machineBookings = upcoming != null && upcoming.ContainsKey(machine.Id) ? upcoming[machine.Id] : null;
+
                             @if (machineBookings != null && machineBookings.Any())
                             {
                                 <div class="mb-2">
@@ -238,18 +244,15 @@
             }
         </div>
     </div>
+
     <script>
-        // Show the "How this works" banner only if the student hasn't dismissed it before
         if (localStorage.getItem('hideHowItWorks') !== 'true') {
             document.getElementById('howItWorksBanner').classList.remove('d-none');
         }
     </script>
 
     <script>
-            const releasedMachines = new Set(); // stops us from calling release twice for the same machine
-
-    <script>
-        const releasedMachines = new Set(); // stops us from calling release twice for the same machine
+        const releasedMachines = new Set();
 
         function updateCountdowns() {
             document.querySelectorAll('.countdown-timer').forEach(function (el) {
@@ -299,6 +302,15 @@
 
         updateCountdowns();
         setInterval(updateCountdowns, 1000);
+    </script>
+
+    <script src="~/js/push.js"></script>
+    <script>
+        document.getElementById('enableNotificationsBtn').addEventListener('click', function () {
+            const vapidPublicKey = "BDGLvsoGAUfsk6LfSMwZAuV4u43D9lFbiTcDmIPjICAEpN2Q8sLQreQ3zkPeGiS1QqgONH3MXCoRq4gzva6OPqQ";
+            const studentEmail = "@ViewBag.StudentEmail";
+            subscribeToPush(vapidPublicKey, studentEmail);
+        });
     </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using LaundryManager.Data;
 using LaundryManager.Models;
+using LaundryManager.Services;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 
@@ -11,11 +12,13 @@ namespace LaundryManager.Controllers
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly PushNotificationService _pushService;
 
         // Connect the controller to our SQL database context
-        public HomeController(ApplicationDbContext context)
+        public HomeController(ApplicationDbContext context, PushNotificationService pushService)
         {
             _context = context;
+            _pushService = pushService;
         }
         private void ActivateDueBookings()
         {
@@ -31,7 +34,7 @@ namespace LaundryManager.Controllers
                 var machine = _context.Machines.FirstOrDefault(m => m.Id == booking.MachineId);
 
                 // Only take over the machine if it's free, or already assigned to this same student
-                if (machine != null && machine.IsWorking &&
+                if (machine != null && machine.Status == MachineStatus.Working &&
                     (!machine.IsBooked || machine.BookedBy == booking.StudentEmail))
                 {
                     machine.IsBooked = true;
@@ -72,11 +75,11 @@ namespace LaundryManager.Controllers
             if (!_context.Machines.Any())
             {
                 _context.Machines.AddRange(
-                    new Machine { Name = "Washing Machine A", Type = "Washer", IsWorking = true },
-                    new Machine { Name = "Washing Machine B", Type = "Washer", IsWorking = true },
-                    new Machine { Name = "Washing Machine C", Type = "Washer", IsWorking = false },
-                    new Machine { Name = "Tumble Dryer 1", Type = "Dryer", IsWorking = true },
-                    new Machine { Name = "Tumble Dryer 2", Type = "Dryer", IsWorking = false }
+                    new Machine { Name = "Washing Machine A", Type = "Washer", Status = MachineStatus.Working },
+new Machine { Name = "Washing Machine B", Type = "Washer", Status = MachineStatus.Working },
+new Machine { Name = "Washing Machine C", Type = "Washer", Status = MachineStatus.OutOfOrder },
+new Machine { Name = "Tumble Dryer 1", Type = "Dryer", Status = MachineStatus.Working },
+new Machine { Name = "Tumble Dryer 2", Type = "Dryer", Status = MachineStatus.OutOfOrder }
                 );
                 _context.SaveChanges();
             }
@@ -96,7 +99,7 @@ namespace LaundryManager.Controllers
 
             return View(machines);
         }
-        
+
 
         public IActionResult Privacy()
         {
@@ -166,7 +169,7 @@ namespace LaundryManager.Controllers
             var machineToUpdate = _context.Machines.FirstOrDefault(m => m.Id == machineId);
             if (machineToUpdate != null)
             {
-                machineToUpdate.IsWorking = false;
+                machineToUpdate.Status = MachineStatus.OutOfOrder;
             }
 
             _context.SaveChanges(); // Push changes to the physical SQL database file
@@ -177,7 +180,7 @@ namespace LaundryManager.Controllers
 
         // 1. BOOK A MACHINE (POST)
         [HttpPost]
-        public IActionResult BookMachine(int machineId)
+        public async Task<IActionResult> BookMachine(int machineId)
         {
             var studentEmail = HttpContext.Session.GetString("UserEmail");
             if (string.IsNullOrEmpty(studentEmail))
@@ -186,12 +189,19 @@ namespace LaundryManager.Controllers
             }
 
             var machine = _context.Machines.FirstOrDefault(m => m.Id == machineId);
-            if (machine != null && machine.IsWorking && !machine.IsBooked)
+            if (machine != null && machine.Status == MachineStatus.Working && !machine.IsBooked)
             {
                 machine.IsBooked = true;
                 machine.BookedBy = studentEmail;
-                machine.BookedAt = DateTime.Now;  // NEW
+                machine.BookedAt = DateTime.Now;
                 _context.SaveChanges();
+
+                await _pushService.SendNotificationAsync(
+                    studentEmail,
+                    "Booking Confirmed",
+                    $"{machine.Name} is now booked under your name.",
+                    "/Home/Index"
+                );
             }
 
             return RedirectToAction("Index");
@@ -201,7 +211,7 @@ namespace LaundryManager.Controllers
 
         // 2. RELEASE / FINISH USING A MACHINE (POST)
         [HttpPost]
-        public IActionResult ReleaseMachine(int machineId)
+        public async Task<IActionResult> ReleaseMachine(int machineId)
         {
             var studentEmail = HttpContext.Session.GetString("UserEmail");
             if (string.IsNullOrEmpty(studentEmail))
@@ -229,12 +239,28 @@ namespace LaundryManager.Controllers
                 }
 
                 _context.SaveChanges();
+
+                // Notify any student who had this machine reserved next that it's now free
+                var nextBooking = _context.Bookings
+                    .Where(b => b.MachineId == machineId && b.SlotStart > now)
+                    .OrderBy(b => b.SlotStart)
+                    .FirstOrDefault();
+
+                if (nextBooking != null)
+                {
+                    await _pushService.SendNotificationAsync(
+                        nextBooking.StudentEmail,
+                        "Machine Available",
+                        $"{machine.Name} is now free and reserved for your upcoming slot.",
+                        "/Home/Index"
+                    );
+                }
             }
 
             return RedirectToAction("Index");
         }
         [HttpPost]
-        public IActionResult AutoReleaseMachine(int machineId)
+        public async Task<IActionResult> AutoReleaseMachine(int machineId)
         {
             var studentEmail = HttpContext.Session.GetString("UserEmail");
             if (string.IsNullOrEmpty(studentEmail))
@@ -259,15 +285,23 @@ namespace LaundryManager.Controllers
                 }
 
                 _context.SaveChanges();
+
+                // Notify the student their cycle is done
+                await _pushService.SendNotificationAsync(
+                    studentEmail,
+                    "Cycle Complete!",
+                    $"{machine.Name} has finished. Your laundry is ready to collect.",
+                    "/Home/Index"
+                );
             }
 
             return Ok();
         }
 
         // GET: /Home/AdminDashboard
+        // GET: /Home/AdminDashboard
         public IActionResult AdminDashboard()
         {
-            // Security Guard: Ensure only the dedicated admin pattern can view this page
             var userEmail = HttpContext.Session.GetString("UserEmail");
             if (string.IsNullOrEmpty(userEmail) || userEmail != "000000000@mywsu.ac.za")
             {
@@ -276,6 +310,15 @@ namespace LaundryManager.Controllers
 
             // Pull all fault reports from the database to display to maintenance
             var reports = _context.FaultReports.OrderByDescending(r => r.Id).ToList();
+
+            // NEW: also pull any machine that's Under Repair or Out of Order,
+            // even if no student ever filed a fault report for it
+            var brokenMachines = _context.Machines
+                .Where(m => m.Status != MachineStatus.Working)
+                .ToList();
+
+            ViewBag.BrokenMachines = brokenMachines;
+
             return View(reports);
         }
 
@@ -287,7 +330,7 @@ namespace LaundryManager.Controllers
             var machine = _context.Machines.FirstOrDefault(m => m.Id == machineId);
             if (machine != null)
             {
-                machine.IsWorking = true;
+                machine.Status = MachineStatus.Working;
                 machine.IsBooked = false; // Ensure it's fully cleared
             }
 
@@ -310,7 +353,7 @@ namespace LaundryManager.Controllers
 
             if (machine != null)
             {
-                machine.IsWorking = false;
+                machine.Status = MachineStatus.OutOfOrder;
                 machine.IsBooked = false; // Kick out any current booking since it's broken
                 _context.SaveChanges();
             }
@@ -345,4 +388,3 @@ namespace LaundryManager.Controllers
         }
     }
 }
-    

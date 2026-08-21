@@ -1,6 +1,5 @@
 ﻿@model LaundryManager.Models.RegisterViewModel
 
-
 @{
     Layout = null; // Stops other layout files from overriding our styling
 }
@@ -9,18 +8,27 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Register - WSU Laundry Portal</title>
+    <title>Register - iWS Laundry Portal</title>
     <!-- Direct link to Bootstrap styles for clean visuals -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="bg-light">
+<body style="background-color: var(--iws-page-bg); min-height: 100vh;">
     <div class="container">
         <div class="row justify-content-center align-items-center vh-100">
             <div class="col-md-4">
-                <div class="card shadow-lg border-0">
+                <div class="card shadow-lg border-0 rounded-4">
                     <div class="card-body p-4">
-                        <h3 class="text-center mb-2 fw-bold text-success">Create Account</h3>
-                        <p class="text-muted text-center small mb-4">Register with your WSU student credentials</p>
+
+                        <div class="text-center mb-3">
+                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                                 style="width:70px; height:70px; background-color: var(--iws-bubble-white);">
+                                <i class="bi bi-person-plus-fill fs-2" style="color: var(--iws-water-color);"></i>
+                            </div>
+                            <h3 class="fw-bold mb-1" style="color: var(--iws-water-color);">Create Account</h3>
+                            <p class="text-muted small mb-0">Register with your WSU student credentials</p>
+                        </div>
 
                         <form asp-action="Register" method="post">
                             <!-- This displays general errors, like if the email is already taken -->
@@ -46,6 +54,7 @@
                                 <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Retype password" required />
                                 <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                             </div>
+
                             <!-- Security Question Input -->
                             <div class="mb-4">
                                 <label asp-for="SecurityAnswer" class="form-label fw-semibold">
@@ -56,7 +65,9 @@
                             </div>
 
                             <!-- Submit Button -->
-                            <button type="submit" class="btn btn-success w-100 fw-bold">Register</button>
+                            <button type="submit" class="btn btn-success w-100 fw-bold">
+                                <i class="bi bi-check-circle me-1"></i> Register
+                            </button>
                         </form>
 
                         <!-- Link to navigate back to the Login screen -->
